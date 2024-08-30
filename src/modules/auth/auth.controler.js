@@ -79,27 +79,39 @@ export const createUserController = async (req, res) => {
   }
 };
 
-export const joinRoomController = async (req, res) => {
+export const loginController = async (req, res) => {
   try {
-    if (!req.body && !req.params.id) {
-      return res.status(498).json({
-        statusCode: 498,
-        message: "Email and password is required!",
+    if (!req.body.email || !req.body.password) {
+      return res.status(409).json({
+        statusCode: 409,
+        message: "Emaila and password are required.",
       });
     }
 
-    const data = await updateMeService(req);
+    const result = await findOneByEmailFromUser(req.body.email);
 
-    if (!data) {
-      return res.status(498).json({
-        statusCode: 498,
-        message: "No room with this account!",
+    if (!result) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: "No room found with this email",
+      });
+    }
+
+    const checkPassword = await bcryptjs.compare(
+      req.body.password,
+      result.password
+    );
+
+    if (!checkPassword) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: "Password is incorrect",
       });
     }
 
     const tokenObj = {
-      roomid: data?._id,
-      username: data?.username,
+      roomid: result?._id,
+      username: result?.username,
     };
 
     const token = await genarateToken(tokenObj);
@@ -107,10 +119,25 @@ export const joinRoomController = async (req, res) => {
     res.status(200).json({
       statusCode: 200,
       message: "success",
-      data: data,
+      data: result,
       token,
     });
   } catch (error) {
     console.log(error);
   }
+};
+
+export const getMeController = async (req, res) => {
+  if (!req.user?.roomid) {
+    return res.status(401).json({
+      statusCode: 401,
+      message: "Password is incorrect",
+    });
+  }
+  const user = await findOneByIdFromUser(req.user?.roomid);
+  res.status(200).json({
+    statusCode: 200,
+    message: "success",
+    data: user,
+  });
 };

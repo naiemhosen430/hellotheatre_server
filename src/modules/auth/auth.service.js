@@ -189,3 +189,18 @@ export const blockService = async (id, myid) => {
 
   return result;
 };
+
+export const checkRoomAvailability = async (roomName) => {
+  try {
+    const room = await UserModel.findOne({ username: roomName });
+
+    if (room) {
+      return { available: true, room };
+    } else {
+      return { available: false };
+    }
+  } catch (error) {
+    console.error("Error checking room availability:", error);
+    throw new Error("Server error, please try again later.");
+  }
+};

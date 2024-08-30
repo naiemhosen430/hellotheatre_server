@@ -10,6 +10,6 @@ const authRouter = express.Router();
 
 authRouter.route("/createroom").post(createUserController);
 authRouter.route("/login").post(loginController);
-authRouter.route("/me").post(authentication, getMeController);
+authRouter.route("/me").get(authentication, getMeController);
 
 export default authRouter;

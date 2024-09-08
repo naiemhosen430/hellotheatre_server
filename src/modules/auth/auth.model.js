@@ -21,7 +21,7 @@ const userSchema = new Schema(
     },
     roomid: {
       type: "String",
-      required: "false",
+      required: false,
       default: "",
     },
     coverphoto: {

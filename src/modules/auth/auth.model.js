@@ -19,6 +19,11 @@ const userSchema = new Schema(
       required: "true",
       default: "",
     },
+    roomid: {
+      type: "String",
+      required: "true",
+      default: "",
+    },
     coverphoto: {
       type: "String",
       required: true,
@@ -62,6 +67,11 @@ const userSchema = new Schema(
       default: "not set",
     },
     friendrequests: {
+      required: true,
+      type: "Array",
+      default: [],
+    },
+    users: {
       required: true,
       type: "Array",
       default: [],

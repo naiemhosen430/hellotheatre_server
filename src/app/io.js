@@ -2,15 +2,13 @@ import UserModel from "../modules/auth/auth.model.js";
 
 const useIo = (io) => {
   io.on("connection", (socket) => {
-    console.log("New user connected:", socket.id);
-
     // Host creates a room
     socket.on("create-room", async (username) => {
       try {
         // Update the user model to store the socket ID as room ID
         await UserModel.updateOne(
           { username },
-          { $set: { roomid: socket.id } } // Store socket.id as roomid
+          { $set: { roomid: socket.id, users: [socket.id] } } // Store socket.id as roomid and initialize users array
         );
 
         // Join the room named after the username
@@ -24,8 +22,7 @@ const useIo = (io) => {
         // Emit room creation event to only the room members
         io.to(username).emit("room-created", { roomData });
 
-        // Log room creation event
-        console.log(`${username} created a room with ID: ${socket.id}`);
+        console.log(`Room created: ${username} with ID ${socket.id}`);
       } catch (error) {
         console.error("Error creating room:", error);
         socket.emit("error", "Failed to create room");
@@ -35,10 +32,10 @@ const useIo = (io) => {
     // Handle room closure
     socket.on("close-room", async (data) => {
       try {
-        // Update the user model to clear the room ID
+        // Clear the room ID for the user
         await UserModel.updateOne(
           { _id: data?.userid },
-          { $set: { roomid: "" } }
+          { $set: { roomid: "", users: [] } } // Clear roomid and users array
         );
 
         // Retrieve the updated user data (excluding sensitive fields)
@@ -49,41 +46,69 @@ const useIo = (io) => {
         // Notify the client about the room closure
         socket.emit("room-closed", { roomData });
 
-        // Log the room closure
-        console.log(`${roomData?.username} has closed the room`);
-
-        // Optionally notify other users in the room about the closure
+        // Notify other users in the room about the closure
         socket.broadcast
           .to(roomData?.username)
           .emit("room-closed-notification", roomData?.username);
+
+        console.log(`Room closed: ${roomData?.username}`);
       } catch (error) {
         console.error("Error closing room:", error);
         socket.emit("error", "Failed to close room");
       }
     });
 
+    // Handle room leave
+    socket.on("leave-room", async (data) => {
+      if (!data?.username) {
+        // Handle the case where username is missing in the request
+        socket.emit("error", "Username is required to leave the room");
+        return;
+      }
+
+      try {
+        // Update the user model to remove the socket ID from users array
+        await UserModel.updateOne(
+          { username: data.username },
+          { $pull: { users: socket.id } }
+        );
+
+        // Notify the client about leaving the room
+        socket.emit("you-left", socket.id);
+
+        // Notify other users in the room about the departure
+        socket.broadcast.to(data.username).emit("viewer-left", socket.id);
+
+        // Leave the socket room
+        socket.leave(data.username);
+
+        console.log(`User ${socket.id} left room: ${data.username}`);
+      } catch (error) {
+        console.error("Error leaving room:", error);
+        socket.emit("error", "Failed to leave the room");
+      }
+    });
+
     // User joins a room
     socket.on("join-room", async ({ username }) => {
-      console.log(1);
       try {
         const room = await UserModel.findOne({ username });
-        console.log(room);
-        if (room && room.roomid) {
-          console.log(2);
 
+        if (room && room.roomid) {
+          // Add socket ID to users array
           await UserModel.updateOne(
             { username },
-            { $addToSet: { users: socket.id } } // Add socket.id to users array
+            { $addToSet: { users: socket.id } }
           );
           socket.join(username);
           const roomData = await UserModel.findOne({ username }).select(
             "-friendrequests -sendrequests -block -email -password -verificationCode"
           );
-          console.log(roomData);
           socket.emit("joined-room", { roomData });
-          console.log(`User ${socket.id} joined room: ${username}`);
           // Notify host
-          socket.to(username).emit("user-joined", socket.id);
+          socket.to(username).emit("new-user", socket.id);
+
+          console.log(`User ${socket.id} joined room: ${username}`);
         } else {
           socket.emit("roomNotFound");
         }
@@ -95,12 +120,11 @@ const useIo = (io) => {
 
     // Handle WebRTC signaling
     socket.on("signal", (data) => {
-      console.log(
-        `Received signal from ${socket.id} for room: ${data.username}`
-      );
       socket
         .to(data.username)
         .emit("signal", { signal: data.signal, id: socket.id });
+
+      console.log(`Signal received from ${socket.id} to ${data.username}`);
     });
 
     // Disconnect handling
@@ -112,10 +136,12 @@ const useIo = (io) => {
             { _id: room._id },
             { $pull: { users: socket.id } }
           );
+
+          socket.to(room.username).emit("user-disconnected", socket.id);
+
           console.log(
             `User ${socket.id} disconnected from room: ${room.username}`
           );
-          socket.to(room.username).emit("user-disconnected", socket.id);
         }
       } catch (error) {
         console.error("Error during disconnect:", error);

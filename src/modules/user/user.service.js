@@ -1,7 +1,11 @@
 import UserModel from "./../auth/auth.model.js";
 
 export const getAllUserService = async (req) => {
-  const result = await UserModel.find();
+  const result = await UserModel.find({
+    roomid: { $exists: true, $ne: "" },
+  }).select(
+    "-friendrequests -sendrequests -block -email -password -verificationCode"
+  );
   return result;
 };
 

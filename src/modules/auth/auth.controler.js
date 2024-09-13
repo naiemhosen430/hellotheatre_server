@@ -14,7 +14,7 @@ export const createUserController = async (req, res) => {
     if (!req.body.fullname || !req.body.email || !req.body.password) {
       return res.status(409).json({
         statusCode: 409,
-        message: "Room name is required!.",
+        message: "theatre name is required!.",
       });
     }
 
@@ -46,7 +46,7 @@ export const createUserController = async (req, res) => {
     if (!result) {
       return res.status(500).json({
         statusCode: 500,
-        message: "Fieled to create rooom",
+        message: "Fieled to create theatre",
       });
     }
 
@@ -66,7 +66,7 @@ export const createUserController = async (req, res) => {
 
     return res.status(200).json({
       statusCode: 200,
-      message: "Room created successfully",
+      message: "Theatre created successfully",
       data: result,
       token,
     });
@@ -93,7 +93,7 @@ export const loginController = async (req, res) => {
     if (!result) {
       return res.status(404).json({
         statusCode: 404,
-        message: "No room found with this email",
+        message: "No theatre found with this email",
       });
     }
 
@@ -131,7 +131,7 @@ export const getMeController = async (req, res) => {
   if (!req.user?.roomid) {
     return res.status(401).json({
       statusCode: 401,
-      message: "Password is incorrect",
+      message: "Unauthorized!",
     });
   }
   const user = await findOneByIdFromUser(req.user?.roomid);

@@ -13,9 +13,9 @@ import {
 
 const userRouter = express.Router();
 
-userRouter.route("/").get(getAllUserControler);
+userRouter.route("/").get(authentication, getAllUserControler);
 
-userRouter.route("/:id").get(getSingleUserControler);
+userRouter.route("/:id").get(authentication, getSingleUserControler);
 
 userRouter.route("/sendrequest/:id").put(authentication, sendRequestControler);
 

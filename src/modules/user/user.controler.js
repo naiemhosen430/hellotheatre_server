@@ -34,8 +34,7 @@ export const getAllUserControler = async (req, res) => {
 export const getSingleUserControler = async (req, res) => {
   try {
     const id = req.params.id;
-    const myid = req.query.myid;
-    const data = await getSingleUserService(id, myid);
+    const data = await getSingleUserService(id);
 
     if (!data) {
       return res.status(498).json({

@@ -77,7 +77,9 @@ const useIo = (io) => {
         socket.emit("you-left", socket.id);
 
         // Notify other users in the room about the departure
-        socket.broadcast.to(data.username).emit("viewer-left", socket.id);
+        socket.broadcast
+          .to(data.username)
+          .emit("viewer-left", { socketid: socket.id, user_id: data?.user_id });
 
         // Leave the socket room
         socket.leave(data.username);
@@ -90,25 +92,29 @@ const useIo = (io) => {
     });
 
     // User joins a room
-    socket.on("join-room", async ({ username }) => {
+    socket.on("join-room", async (data) => {
       try {
-        const room = await UserModel.findOne({ username });
+        const room = await UserModel.findOne({ username: data?.username });
 
         if (room && room.roomid) {
           // Add socket ID to users array
           await UserModel.updateOne(
-            { username },
+            { username: data?.username },
             { $addToSet: { users: socket.id } }
           );
-          socket.join(username);
-          const roomData = await UserModel.findOne({ username }).select(
+          socket.join(data?.username);
+          const roomData = await UserModel.findOne({
+            username: data?.username,
+          }).select(
             "-friendrequests -sendrequests -block -email -password -verificationCode"
           );
           socket.emit("joined-room", { roomData });
           // Notify host
-          socket.to(username).emit("new-user", socket.id);
+          socket
+            .to(data?.username)
+            .emit("new-user", { socketid: socket.id, user_id: data?.user_id });
 
-          console.log(`User ${socket.id} joined room: ${username}`);
+          console.log(`User ${socket.id} joined room: ${data?.username}`);
         } else {
           socket.emit("roomNotFound");
         }

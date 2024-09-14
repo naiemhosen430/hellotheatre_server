@@ -24,29 +24,9 @@ export const findMeService = async (ruseridq) => {
   return result;
 };
 
-export const getSingleUserService = async (id, myid) => {
-  const user = await UserModel.findOne({ _id: id });
-
-  if (!user) {
-    return null;
-  }
-
-  let checkFriend = false;
-  user.friends.map((fid) => {
-    if (fid === myid) {
-      checkFriend = true;
-    }
-  });
-
-  if (checkFriend) {
-    const result = await UserModel.findOne({ _id: id }).select(
-      "fullname profilephoto tittle sendrequests gender friendrequests online_status position friends"
-    );
-    return result;
-  }
-
+export const getSingleUserService = async (id) => {
   const result = await UserModel.findOne({ _id: id }).select(
-    "fullname profilephoto sendrequests friendrequests tittle friends gender position"
+    "-role -block -email -password -verificationCode"
   );
   return result;
 };

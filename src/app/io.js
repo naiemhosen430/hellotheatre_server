@@ -6,12 +6,21 @@ const useIo = (io) => {
     socket.on("create-room", async (username) => {
       try {
         // Update the user model to store the socket ID as room ID
+        const mydata = await UserModel.findOne({ username }).select(
+          "-friendrequests -sendrequests -block -email -password -verificationCode"
+        );
         await UserModel.updateOne(
-          { username },
-          { $set: { roomid: socket.id, users: [socket.id] } } // Store socket.id as roomid and initialize users array
+          { username, "users.user_id": { $ne: mydata?._id } },
+          {
+            $set: {
+              roomid: socket.id,
+            },
+            $push: {
+              users: { socket_id: socket.id, user_id: mydata?._id },
+            },
+          }
         );
 
-        // Join the room named after the username
         socket.join(username);
 
         // Retrieve updated user data (excluding sensitive fields)
@@ -70,16 +79,20 @@ const useIo = (io) => {
         // Update the user model to remove the socket ID from users array
         await UserModel.updateOne(
           { username: data.username },
-          { $pull: { users: socket.id } }
+          { $pull: { users: { socket_id: socket.id } } }
         );
 
         // Notify the client about leaving the room
-        socket.emit("you-left", socket.id);
+        socket.emit("you-left", {
+          socket_id: socket.id,
+          user_id: data?.user_id,
+        });
 
         // Notify other users in the room about the departure
-        socket.broadcast
-          .to(data.username)
-          .emit("viewer-left", { socketid: socket.id, user_id: data?.user_id });
+        socket.broadcast.to(data.username).emit("viewer-left", {
+          socket_id: socket.id,
+          user_id: data?.user_id,
+        });
 
         // Leave the socket room
         socket.leave(data.username);
@@ -99,8 +112,15 @@ const useIo = (io) => {
         if (room && room.roomid) {
           // Add socket ID to users array
           await UserModel.updateOne(
-            { username: data?.username },
-            { $addToSet: { users: socket.id } }
+            {
+              username: data?.username,
+              "users.user_id": { $ne: data?.user_id },
+            },
+            {
+              $push: {
+                users: { socket_id: socket.id, user_id: data?.user_id },
+              },
+            }
           );
           socket.join(data?.username);
           const roomData = await UserModel.findOne({
@@ -112,7 +132,7 @@ const useIo = (io) => {
           // Notify host
           socket
             .to(data?.username)
-            .emit("new-user", { socketid: socket.id, user_id: data?.user_id });
+            .emit("new-user", { socket_id: socket.id, user_id: data?.user_id });
 
           console.log(`User ${socket.id} joined room: ${data?.username}`);
         } else {

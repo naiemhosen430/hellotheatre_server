@@ -144,13 +144,20 @@ const useIo = (io) => {
       }
     });
 
-    // Handle WebRTC signaling
-    socket.on("signal", (data) => {
-      socket
-        .to(data.username)
-        .emit("signal", { signal: data.signal, id: socket.id });
+    socket.on("send-stream", (room, stream) => {
+      socket.to(room).emit("receive-stream", socket.id, stream);
+    });
 
-      console.log(`Signal received from ${socket.id} to ${data.username}`);
+    socket.on("send-offer", (userId, offer) => {
+      socket.to(userId).emit("receive-offer", socket.id, offer);
+    });
+
+    socket.on("send-answer", (userId, answer) => {
+      socket.to(userId).emit("receive-answer", socket.id, answer);
+    });
+
+    socket.on("send-candidate", (userId, candidate) => {
+      socket.to(userId).emit("receive-candidate", socket.id, candidate);
     });
 
     // Disconnect handling

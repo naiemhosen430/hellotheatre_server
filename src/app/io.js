@@ -144,20 +144,24 @@ const useIo = (io) => {
       }
     });
 
+    // Broadcast stream to all members in the room
     socket.on("send-stream", (room, stream) => {
       socket.to(room).emit("receive-stream", socket.id, stream);
     });
 
-    socket.on("send-offer", (userId, offer) => {
-      socket.to(userId).emit("receive-offer", socket.id, offer);
+    // Send offer to all members in the room
+    socket.on("send-offer", (room, offer) => {
+      socket.to(room).emit("receive-offer", socket.id, offer);
     });
 
-    socket.on("send-answer", (userId, answer) => {
-      socket.to(userId).emit("receive-answer", socket.id, answer);
+    // Send answer to all members in the room
+    socket.on("send-answer", (room, answer) => {
+      socket.to(room).emit("receive-answer", socket.id, answer);
     });
 
-    socket.on("send-candidate", (userId, candidate) => {
-      socket.to(userId).emit("receive-candidate", socket.id, candidate);
+    // Send ICE candidate to all members in the room
+    socket.on("send-candidate", (room, candidate) => {
+      socket.to(room).emit("receive-candidate", socket.id, candidate);
     });
 
     // Disconnect handling

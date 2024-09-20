@@ -152,6 +152,7 @@ const useIo = (io) => {
     });
 
     socket.on("message-sent", (data) => {
+      console.log(data);
       io.to(data.to).emit("message-recieve", {
         from: data?.name,
         message: data.message,

@@ -151,6 +151,13 @@ const useIo = (io) => {
       });
     });
 
+    socket.on("message-sent", (data) => {
+      io.to(data.to).emit("message-recieve", {
+        from: data?.name,
+        message: data.message,
+      });
+    });
+
     // Disconnect handling
     socket.on("disconnect", async () => {
       try {

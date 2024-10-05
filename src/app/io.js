@@ -145,6 +145,7 @@ const useIo = (io) => {
     });
 
     socket.on("signal", (data) => {
+      console.log({ data });
       io.to(data.to).emit("signal", {
         from: socket.id,
         signal: data.signal,
